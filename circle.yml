@@ -1,11 +1,85 @@
 machine:
-  timezone:
-    Asia/Bangkok
-
+  environment:
+    # GOROOT is not set by default
+    GOROOT: ""
+    PATH: "/usr/local/go/bin:/usr/local/go_workspace/bin:~/.go_workspace/bin:${PATH}"
+    GOPATH: "${HOME}/.go_workspace"
+  services:
+    - docker
+checkout:
+  post:
+    - git submodule sync
+    - git submodule update --init
 dependencies:
   override:
-    - go get -u ./...
+    - docker info
 
+    # Remove old Golang src directory
+    - rm -rf "${GOPATH}/src"
+
+    # Create empty src Golang directory
+    - mkdir -p "${GOPATH}/src"
+
+    # Install the package dependencies
+    - |
+      docker run --rm=false -it \
+        -v "${GOPATH}:/go:rw" \
+        -v "${HOME}/${CIRCLE_PROJECT_REPONAME}:/go/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:rw" \
+        -e CIRCLE_PROJECT_USERNAME="${CIRCLE_PROJECT_USERNAME}" \
+        -e CIRCLE_PROJECT_REPONAME="${CIRCLE_PROJECT_REPONAME}" \
+        golang:1.7-alpine /bin/sh -c " \
+          apk -U --no-cache add git && \
+          cd /go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && \
+          go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway && \
+          go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger && \
+          go get github.com/golang/protobuf/protoc-gen-go && \
+          go get github.com/onsi/ginkgo/ginkgo && \
+          go get github.com/onsi/gomega && \
+          go get google.golang.org/grpc"
+
+    # Compile the Protocol Buffers
+    # - gRPC Stub
+    # - gRPC RESTful Gateway
+    # - Swagger JSON
+    - |
+      docker run --rm=false -it \
+        -v "${GOPATH}:/go:rw" \
+        -v "${HOME}/${CIRCLE_PROJECT_REPONAME}/protos/blog-service/posts:/src:rw" \
+        --entrypoint=/bin/sh \
+        nanoservice/protobuf-go:latest -i -c " \
+          protoc \
+            -I/usr/include \
+            -I. \
+            -I/go/src \
+            -I/go/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+            --go_out=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api,plugins=grpc:. \
+            *.proto && \
+          protoc \
+            -I/usr/include \
+            -I. \
+            -I/go/src \
+            -I/go/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+            --grpc-gateway_out=logtostderr=true:. \
+            *.proto && \
+          protoc \
+            -I/usr/include \
+            -I. \
+            -I/go/src \
+            -I/go/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+            --swagger_out=logtostderr=true:. \
+            *.proto"
 test:
   override:
-    - go test -v -race ./...
+    # Run the Golang linter & tests using Godep
+    - |
+      docker run --rm=false -it \
+        -v "${GOPATH}:/go:rw" \
+        -v "${HOME}/${CIRCLE_PROJECT_REPONAME}:/go/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:rw" \
+        -e CIRCLE_PROJECT_USERNAME="${CIRCLE_PROJECT_USERNAME}" \
+        -e CIRCLE_PROJECT_REPONAME="${CIRCLE_PROJECT_REPONAME}" \
+        golang:1.7-alpine /bin/sh -c " \
+          cd /go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && \
+          go vet ./... &&
+          go test ./blog-service/... && \
+          go test ./grpc-gateway/... && \
+          go test ./grpc-server/..."

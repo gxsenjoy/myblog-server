@@ -18,9 +18,9 @@
 #     --build-arg BUILD_VERSION=0.0.1-alpha.1 \
 #     .
 
-FROM golang:1.7-alpine
+FROM alpine:latest
 
-ARG BUILD_APPLICATION=grpc-server
+ARG BUILD_APPLICATION=grpc_server
 ARG BUILD_BRANCH=develop
 ARG BUILD_ENVIRONMENT=staging
 ARG BUILD_VERSION=0.0.0
