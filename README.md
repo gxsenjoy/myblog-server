@@ -1,6 +1,7 @@
 # myblog-server
 
-[![CircleCI](https://circleci.com/gh/nomkhonwaan/myblog-server.svg?style=svg)](https://circleci.com/gh/nomkhonwaan/myblog-server)
+[![CircleCI](https://circleci.com/gh/nomkhonwaan/myblog-server.svg?style=shield)](https://circleci.com/gh/nomkhonwaan/myblog-server)
+[![Coverage Status](https://coveralls.io/repos/github/nomkhonwaan/myblog-server/badge.svg?branch=develop)](https://coveralls.io/github/nomkhonwaan/myblog-server?branch=develop)
 [![Stories in Ready](https://badge.waffle.io/nomkhonwaan/myblog-server.svg?label=ready&title=Ready)](http://waffle.io/nomkhonwaan/myblog-server)
 
 ## Installation
