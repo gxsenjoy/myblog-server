@@ -1,0 +1,11 @@
+machine:
+  timezone:
+    Asia/Bangkok
+
+dependencies:
+  override:
+    - go get -u ./...
+
+test:
+  override:
+    - go test -v -race ./...
