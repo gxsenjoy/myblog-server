@@ -1,5 +1,6 @@
 # myblog-server
 
+[![CircleCI](https://circleci.com/gh/nomkhonwaan/myblog-server.svg?style=svg)](https://circleci.com/gh/nomkhonwaan/myblog-server)
 [![Stories in Ready](https://badge.waffle.io/nomkhonwaan/myblog-server.svg?label=ready&title=Ready)](http://waffle.io/nomkhonwaan/myblog-server)
 
 ## Installation
@@ -30,20 +31,34 @@ $ protoc -I/usr/local/include -I. \
  *.proto
 ```
 
-### Reverse Proxy Gateway
+### gRPC RESTful Gateway
 ```
 $ protoc -I/usr/local/include -I. \
  -I$GOPATH/src \
  -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
  --grpc-gateway_out=logtostderr=true:. \
  *.proto
- ```
+```
 
- ### Swagger
- ```
+### Swagger JSON
+```
  $ protoc -I/usr/local/include -I. \
  -I$GOPATH/src \
  -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
  --swagger_out=logtostderr=true:. \
  *.proto
  ```
+
+## Compile the Source Code
+
+### gRPC Server
+```
+$ cd $GOPATH/src/github.com/nomkhonwaan/myblog-server/grpc-server
+$ go build -o ../bin/grpc_server .
+```
+
+### gRPC RESTful Gateway
+```
+$ cd $GOPATH/src/github.com/nomkhonwaan/myblog-server/grpc-gateway
+$ go build -o ../bin/grpc-gateway
+```
