@@ -1,23 +1,30 @@
 # myblog-server
 
-[![CircleCI](https://circleci.com/gh/nomkhonwaan/myblog-server.svg?style=svg)](https://circleci.com/gh/nomkhonwaan/myblog-server)
+[![CircleCI](https://circleci.com/gh/nomkhonwaan/myblog-server.svg?style=shield)](https://circleci.com/gh/nomkhonwaan/myblog-server)
+[![Coverage Status](https://coveralls.io/repos/github/nomkhonwaan/myblog-server/badge.svg?branch=develop)](https://coveralls.io/github/nomkhonwaan/myblog-server?branch=develop)
 [![Stories in Ready](https://badge.waffle.io/nomkhonwaan/myblog-server.svg?label=ready&title=Ready)](http://waffle.io/nomkhonwaan/myblog-server)
 
 ## Installation
 
 ### Golang Packages
 ```
+$ go get -u github.com/tools/godep
+$ godep restore
+```
+
+### Development Packages
+```
 $ go get -u golang.org/x/tools/cmd/...
 $ go get -u github.com/golang/lint/golint
 $ go get -u github.com/nsf/gocode
-$ go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-$ go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-$ go get -u github.com/golang/protobuf/protoc-gen-go
+$ apm install go-plus language-docker language-protobuf
 ```
 
-### Atom Editor Packages
+## Run the Tests
 ```
-$ apm install go-plus language-docker language-protobuf
+$ godep go test ./blog-service/...
+$ godep go test ./grpc-gateway/...
+$ godep go test ./grpc-server/...
 ```
 
 ## Compile the Protobufs
