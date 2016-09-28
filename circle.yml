@@ -53,19 +53,7 @@ dependencies:
             -I/go/src \
             -I/go/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
             --go_out=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api,plugins=grpc:. \
-            *.proto && \
-          protoc \
-            -I/usr/include \
-            -I. \
-            -I/go/src \
-            -I/go/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
             --grpc-gateway_out=logtostderr=true:. \
-            *.proto && \
-          protoc \
-            -I/usr/include \
-            -I. \
-            -I/go/src \
-            -I/go/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
             --swagger_out=logtostderr=true:. \
             *.proto"
 test:
