@@ -10,7 +10,7 @@ checkout:
 dependencies:
   override:
     - docker info
-    
+
     # Install the package dependencies
     - |
       docker run --rm=false -it \
@@ -79,20 +79,20 @@ deployment:
             go build -o ./bin/grpc_gateway ./grpc-gateway/main.go"
       # Build the Docker Image for gRPC server
       - |
-        docker build -t \
+        docker build \
           --build-arg BUILD_APPLICATION=grpc_server \
           --build-arg BUILD_BRANCH=develop \
           --build-arg BUILD_ENVIRONMENT=staging \
           --build-arg BUILD_VERSION=0.0.0 \
-          "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:latest" .
+          -t "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:latest" .
       # Build the Docker Image for gRPC gateway
       - |
-        docker build -t \
+        docker build \
           --build-arg BUILD_APPLICATION=grpc_gateway \
           --build-arg BUILD_BRANCH=develop \
           --build-arg BUILD_ENVIRONMENT=staging \
           --build-arg BUILD_VERSION=0.0.0 \
-          "${CIRCLE_PROJECT_USERNAME}/myblog-gateway:latest" .
+          -t "${CIRCLE_PROJECT_USERNAME}/myblog-gateway:latest" .
 
       # Push to Docker Registry
       - docker login -u $DOCKER_USER -p $DOCKER_PASS
