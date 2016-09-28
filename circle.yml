@@ -71,3 +71,39 @@ test:
           go test ./blog-service/... && \
           go test ./grpc-gateway/... && \
           go test ./grpc-server/..."
+deployment:
+  staging:
+    branch: develop
+    commands:
+      # Build the gRPC server and gateway to binary
+      - |
+        docker run --rm=false -it \
+          -v "${GOPATH}:/go:rw" \
+          -v "${HOME}/${CIRCLE_PROJECT_REPONAME}:/go/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:rw" \
+          -e CIRCLE_PROJECT_USERNAME="${CIRCLE_PROJECT_USERNAME}" \
+          -e CIRCLE_PROJECT_REPONAME="${CIRCLE_PROJECT_REPONAME}" \
+          golang1.7-alpine /bin/sh -c " \
+            cd /go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && \
+            go build -o ./bin/grpc_server ./grpc-server/main.go &&
+            go build -o ./bin/grpc_gateway ./grpc-gateway/main.go"
+      # Build the Docker Image for gRPC server
+      - |
+        docker build -t \
+          --build-arg BUILD_APPLICATION=grpc_server \
+          --build-arg BUILD_BRANCH=develop \
+          --build-arg BUILD_ENVIRONMENT=staging \
+          --build-arg BUILD_VERSION=0.0.0 \
+          "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:latest" .
+      # Build the Docker Image for gRPC gateway
+      - |
+        docker build -t \
+          --build-arg BUILD_APPLICATION=grpc_gateway \
+          --build-arg BUILD_BRANCH=develop \
+          --build-arg BUILD_ENVIRONMENT=staging \
+          --build-arg BUILD_VERSION=0.0.0 \
+          "${CIRCLE_PROJECT_USERNAME}/myblog-gateway:latest" .
+
+      # Push to Docker Registry
+      - docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:latest"
+      - docker push "${CIRCLE_PROJECT_USERNAME}/myblog-gateway:latest"
