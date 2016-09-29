@@ -1,0 +1,102 @@
+machine:
+  environment:
+    GOPATH: "${HOME}/go"
+  services:
+    - docker
+checkout:
+  post:
+    - git submodule sync
+    - git submodule update --init
+dependencies:
+  override:
+    - docker info
+
+    # Install the package dependencies
+    - |
+      docker run --rm=false -it \
+        -v "${GOPATH}:/go:rw" \
+        -v "${HOME}/${CIRCLE_PROJECT_REPONAME}:/go/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:rw" \
+        -e CIRCLE_PROJECT_USERNAME="${CIRCLE_PROJECT_USERNAME}" \
+        -e CIRCLE_PROJECT_REPONAME="${CIRCLE_PROJECT_REPONAME}" \
+        golang:1.7-alpine /bin/sh -c " \
+          apk -U --no-cache add git && \
+          cd /go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && \
+          go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway && \
+          go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger && \
+          go get github.com/golang/protobuf/protoc-gen-go && \
+          go get github.com/onsi/ginkgo/ginkgo && \
+          go get github.com/onsi/gomega && \
+          go get google.golang.org/grpc"
+
+    # Compile the Protocol Buffers
+    # - gRPC Stub
+    # - gRPC RESTful Gateway
+    # - Swagger JSON
+    - |
+      docker run --rm=false -it \
+        -v "${GOPATH}:/go:rw" \
+        -v "${HOME}/${CIRCLE_PROJECT_REPONAME}/protos/blog-service/posts:/src:rw" \
+        --entrypoint=/bin/sh \
+        nanoservice/protobuf-go:latest -i -c " \
+          protoc \
+            -I/usr/include \
+            -I. \
+            -I/go/src \
+            -I/go/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+            --go_out=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api,plugins=grpc:. \
+            --grpc-gateway_out=logtostderr=true:. \
+            --swagger_out=logtostderr=true:. \
+            *.proto"
+test:
+  override:
+    # Run the Golang linter & tests using Godep
+    - |
+      docker run --rm=false -it \
+        -v "${GOPATH}:/go:rw" \
+        -v "${HOME}/${CIRCLE_PROJECT_REPONAME}:/go/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:rw" \
+        -e CIRCLE_PROJECT_USERNAME="${CIRCLE_PROJECT_USERNAME}" \
+        -e CIRCLE_PROJECT_REPONAME="${CIRCLE_PROJECT_REPONAME}" \
+        golang:1.7-alpine /bin/sh -c " \
+          cd /go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && \
+          go vet ./... &&
+          go test ./blog-service/... && \
+          go test ./grpc-gateway/... && \
+          go test ./grpc-server/..."
+deployment:
+  staging:
+    branch: develop
+    commands:
+      # Build the gRPC server and gateway to binary
+      - |
+        docker run --rm=false -it \
+          -v "${GOPATH}:/go:rw" \
+          -v "${HOME}/${CIRCLE_PROJECT_REPONAME}:/go/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:rw" \
+          -e CIRCLE_PROJECT_USERNAME="${CIRCLE_PROJECT_USERNAME}" \
+          -e CIRCLE_PROJECT_REPONAME="${CIRCLE_PROJECT_REPONAME}" \
+          golang:1.7-alpine /bin/sh -c " \
+            cd /go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && \
+            go build -o ./bin/grpc_server ./grpc-server/main.go &&
+            go build -o ./bin/grpc_gateway ./grpc-gateway/main.go"
+      # Build the Docker Image for gRPC server
+      - |
+        docker build \
+          --build-arg BUILD_APPLICATION=grpc_server \
+          --build-arg BUILD_BRANCH=develop \
+          --build-arg BUILD_COMMIT=$(git log --pretty=format:'%h' -1) \
+          --build-arg BUILD_ENVIRONMENT=staging \
+          --build-arg BUILD_VERSION=$(git tag | tail -1)\
+          -t "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:latest" .
+      # Build the Docker Image for gRPC gateway
+      - |
+        docker build \
+          --build-arg BUILD_APPLICATION=grpc_gateway \
+          --build-arg BUILD_BRANCH=develop \
+          --build-arg BUILD_COMMIT=$(git log --pretty=format:'%h' -1) \
+          --build-arg BUILD_ENVIRONMENT=staging \
+          --build-arg BUILD_VERSION=$(git tag | tail -1)\
+          -t "${CIRCLE_PROJECT_USERNAME}/myblog-gateway:latest" .
+
+      # Push to Docker Registry
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:latest"
+      - docker push "${CIRCLE_PROJECT_USERNAME}/myblog-gateway:latest"
