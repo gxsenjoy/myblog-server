@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"net"
+	"os"
 
 	"github.com/golang/glog"
 	"github.com/nomkhonwaan/myblog-server/blog-service/posts"
@@ -11,7 +12,7 @@ import (
 )
 
 func Run() error {
-	lis, err := net.Listen("tcp", ":9090")
+	lis, err := net.Listen("tcp", ":"+os.Getenv("PORT"))
 	if err != nil {
 		return err
 	}

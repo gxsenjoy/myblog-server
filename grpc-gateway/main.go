@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 
@@ -14,7 +15,7 @@ import (
 )
 
 var (
-	blogservicePostsEndpoint   = flag.String("blogservice_posts_endpoint", "localhost:9090", "endpoint of blogservice_posts.PostsService")
+	blogservicePostsEndpoint   = flag.String("blogservice_posts_endpoint", os.Getenv("GRPC_SERVER_URI"), "endpoint of blogservice_posts.PostsService")
 	blogservicePostsSwaggerDir = flag.String("blogservice_posts_swagger_dir", "protos/blog-service/posts", "path to the directory which contains swagger definitions")
 )
 
@@ -87,7 +88,7 @@ func main() {
 	flag.Parse()
 	defer glog.Flush()
 
-	if err := Run(":8080"); err != nil {
+	if err := Run(":" + os.Getenv("PORT")); err != nil {
 		glog.Fatal(err)
 	}
 }
