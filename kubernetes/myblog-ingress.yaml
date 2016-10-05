@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: myblog
+spec:
+  backend:
+    serviceName: myblog-gateway
+    servicePort: 3000
+  rules:
+  - host: api.staging.cluster-1.nomkhonwaan-project.nomkhonwaan.com
+    http:
+      paths:
+      - backend:
+          serviceName: myblog-gateway
+          servicePort: 3000

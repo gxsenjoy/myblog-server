@@ -1,0 +1,21 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: myblog-gateway
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: myblog-gateway
+    spec:
+      containers:
+      - name: myblog-gateway
+        image: nomkhonwaan/myblog-gateway:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        - name: GRPC_SERVER_URI
+          value: "myblog-server:9090"

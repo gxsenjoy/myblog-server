@@ -1,0 +1,19 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: myblog-server
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: myblog-server
+    spec:
+      containers:
+      - name: myblog-server
+        image: nomkhonwaan/myblog-server:latest
+        ports:
+        - containerPort: 9090
+        env:
+        - name: PORT
+          value: "9090"
