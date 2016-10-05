@@ -1,0 +1,15 @@
+{
+    "CN": "api.staging.cluster-1.nomkhonwaan-project.nomkhonwaan.com",
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [{
+        "C": "TH",
+        "L": "Din Daeng",
+        "O": "Nomkhonwaan",
+        "OU": "Cluster 1",
+        "OU": "Nomkhonwaan Project",
+        "ST": "Bangkok"
+    }]
+}

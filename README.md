@@ -72,3 +72,57 @@ $ go build -o ../bin/grpc_server .
 $ cd $GOPATH/src/github.com/nomkhonwaan/myblog-server/grpc-gateway
 $ go build -o ../bin/grpc-gateway
 ```
+
+## SSL
+
+Generate self-signed certificate using CloudFlare SSL tools
+```
+$ cd $GOPATH/src/github.com/nomkhonwaan/myblog-server/ssl
+$ cfssl gencert -initca myblog-csr-ca.json | cfssljson -bare myblog
+```
+
+Then copy the certificate and key by encode it with base64 algorithm
+
+```
+$ cat myblog.pem | base64 | pbcopy
+```
+
+put the certificate base64 to `myblog-sercret.yaml tls.crt` and do it same on the certificate key file
+
+```
+$ cat myblog-key.pem | base64 | pbcopy
+```
+
+And then edit the `myblog-ingress.yaml` in `spec.tls` with `secretName` field
+
+```yaml
+...
+spec:
+  tls:
+  - secretName: myblog
+...
+```
+
+## Deployment
+### Kubernetes
+#### Create the Deployment
+```
+$ kubectl create -f myblog-server-deployment.yaml
+$ kubectl create -f myblog-gateway-deployment.yaml
+```
+
+#### Create the Service
+```
+$ kubectl create -f myblog-server-service.yaml
+$ kubectl create -f myblog-gateway-service.yaml
+```
+
+#### Create the Secert
+```
+$ kubectl create -f myblog-secret.yaml
+```
+
+#### Create the Ingress
+```
+$ kubectl create -f myblog-ingress.yaml
+```
