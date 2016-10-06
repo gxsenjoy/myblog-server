@@ -12,9 +12,11 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: myblog-server
-          servicePort: 9090
-      - path: /blog-service
-        backend:
+          serviceName: myblog-gateway
+          servicePort: 3000
+  - host: api-staging.nomkhonwaan.com
+    http:
+      paths:
+      - backend:
           serviceName: myblog-gateway
           servicePort: 3000
