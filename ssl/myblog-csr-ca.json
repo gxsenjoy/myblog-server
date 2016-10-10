@@ -1,5 +1,5 @@
 {
-    "CN": "api.staging.cluster-1.nomkhonwaan-project.nomkhonwaan.com",
+    "CN": "myblog-server.myblog-staging.cluster-1.nomkhonwaan-project.nomkhonwaan.com",
     "key": {
         "algo": "rsa",
         "size": 2048

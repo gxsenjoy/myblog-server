@@ -8,7 +8,7 @@ spec:
   tls:
   - secretName: myblog
   rules:
-  - host: api.staging.cluster-1.nomkhonwaan-project.nomkhonwaan.com
+  - host: myblog-server.myblog-staging.cluster-1.nomkhonwaan-project.nomkhonwaan.com
     http:
       paths:
       - backend:
