@@ -1,0 +1,120 @@
+version: '2'
+
+# The following services are represent from CircleCI state.
+services:
+
+  # Create the container from Alpine and mapped to local directories for another services.
+  data:
+    image: alpine:latest
+    volumes:
+      - $PWD:/go/src/github.com/nomkhonwaan/myblog-server:rw
+      - $PWD/.cache/gopath:/go:rw
+    command: /bin/true
+  
+  # # To install Golang packages using Godep
+  # dependencies:
+  #   image: golang:1.7-alpine
+  #   volumes_from:
+  #     - data
+  #   environment:
+  #     - GOPATH=/go
+  #   command: |
+  #     /bin/sh -c " \
+  #       apk -u --no-cache add git && \
+  #       cd /go/src/github.com/nomkhonwaan/myblog-server && \
+  #       go get github.com/tools/godep && \
+  #       go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway && \
+  #       go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger && \
+  #       go get github.com/golang/protobuf/protoc-gen-go && \
+  #       godep restore"
+  
+  # Compile the Protocol Buffers 
+  protobuf:
+    image: nanoservice/protobuf-go:latest
+    volumes:
+      - $PWD/protos/blog-service/posts:/src:rw
+    volumes_from:
+      - data
+    environment:
+      - GOPATH=/go
+    # depends_on:
+    #   - dependencies
+    entrypoint: |
+      /bin/sh -c " \
+        while [ ! -f /go/bin/protoc-gen-go ] || [ ! -f /go/bin/protoc-gen-grpc-gateway ] || [ ! -f /go/bin/protoc-gen-swagger ]; do
+          sleep 1
+        done
+        
+        /usr/bin/protoc \
+          -I/usr/include \
+          -I. \
+          -I/go/src \
+          -I/go/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+          --go_out=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api,plugins=grpc:. \
+          --grpc-gateway_out=logtostderr=true:. \
+          --swagger_out=logtostderr=true:. \
+          *.proto"
+  
+  # Build project binary 
+  deployment:
+    image: golang:1.7-alpine
+    volumes_from:
+      - data
+    environment:
+      - GOPATH=/go
+    depends_on:
+      - protobuf
+    command: |
+      /bin/sh -c " \
+        cd /go/src/github.com/nomkhonwaan/myblog-server && \
+        go build -o ./bin/grpc_server ./grpc-server/main.go && \
+        go build -o ./bin/grpc_gateway ./grpc-gateway/main.go"
+
+  # Build the Docker Image for myblog-server
+  myblog-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_APPLICATION: grpc_server
+        BUILD_ENVIRONMENT: development
+    volumes_from:
+      - data
+    environment:
+      - PORT=9090
+    depends_on:
+      - deployment
+    entrypoint: |
+      /bin/sh -c " \
+        while [ ! -f /go/src/github.com/nomkhonwaan/myblog-server/bin/grpc_server ]; do
+          sleep 1
+        done;
+
+        /usr/bin/grpc_server"
+  
+  # Build the Docker Image for myblog-gateway
+  myblog-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_APPLICATION: grpc_gateway
+        BUILD_ENVIRONMENT: development
+    volumes_from:
+      - data
+    environment:
+      - PORT=8080
+      - GRPC_SERVER_URI=myblog-server:9090
+    ports:
+      - '8080:8080'
+    links:
+      - myblog-server
+    depends_on:
+      - myblog-server
+    entrypoint: |
+      /bin/sh -c " \
+        while [ ! -f /go/src/github.com/nomkhonwaan/myblog-server/bin/grpc_gateway ] || [ ! \"nc myblog-server 9090\" ]; do
+          sleep 1
+        done;
+        
+        /usr/bin/grpc_gateway"

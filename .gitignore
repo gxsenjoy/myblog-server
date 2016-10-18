@@ -29,3 +29,5 @@ vendor
 
 ssl/*
 !ssl/*.json
+
+.cache
