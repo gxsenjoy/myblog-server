@@ -7,26 +7,41 @@ services:
   data:
     image: alpine:latest
     volumes:
-      - $PWD:/go/src/github.com/nomkhonwaan/myblog-server:rw
       - $PWD/.cache/gopath:/go:rw
+      - $PWD/config.example.yml:/usr/bin/config.yml:ro
+      - $PWD:/go/src/github.com/nomkhonwaan/myblog-server:rw
     command: /bin/true
   
-  # # To install Golang packages using Godep
-  # dependencies:
-  #   image: golang:1.7-alpine
-  #   volumes_from:
-  #     - data
-  #   environment:
-  #     - GOPATH=/go
-  #   command: |
-  #     /bin/sh -c " \
-  #       apk -u --no-cache add git && \
-  #       cd /go/src/github.com/nomkhonwaan/myblog-server && \
-  #       go get github.com/tools/godep && \
-  #       go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway && \
-  #       go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger && \
-  #       go get github.com/golang/protobuf/protoc-gen-go && \
-  #       godep restore"
+  # To install Golang packages using Godep
+  dependencies:
+    image: golang:1.7-alpine
+    volumes_from:
+      - data
+    environment:
+      - GOPATH=/go
+    command: |
+      /bin/sh -c " \
+        apk -u --no-cache add git;
+
+        cd /go/src/github.com/nomkhonwaan/myblog-server;
+        
+        if [ ! -f /go/bin/godep ]; then
+          go get github.com/tools/godep
+        fi;
+
+        if [ ! -f /go/bin/protoc-gen-go ]; then
+          go get github.com/golang/protobuf/protoc-gen-go
+        fi;
+
+        if [ ! -f /go/bin/protoc-gen-grpc-gateway ]; then
+          go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+        fi;
+
+        if [ ! -f /go/bin/protoc-gen-swagger ]; then
+          go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+        fi;
+              
+        godep restore"
   
   # Compile the Protocol Buffers 
   protobuf:
@@ -37,8 +52,8 @@ services:
       - data
     environment:
       - GOPATH=/go
-    # depends_on:
-    #   - dependencies
+    depends_on:
+      - dependencies
     entrypoint: |
       /bin/sh -c " \
         while [ ! -f /go/bin/protoc-gen-go ] || [ ! -f /go/bin/protoc-gen-grpc-gateway ] || [ ! -f /go/bin/protoc-gen-swagger ]; do
@@ -64,11 +79,12 @@ services:
       - GOPATH=/go
     depends_on:
       - protobuf
+    restart: on-failure
     command: |
       /bin/sh -c " \
         cd /go/src/github.com/nomkhonwaan/myblog-server && \
-        go build -o ./bin/grpc_server ./grpc-server/main.go && \
-        go build -o ./bin/grpc_gateway ./grpc-gateway/main.go"
+        go build -o ./bin/grpc_server ./server/main.go && \
+        go build -o ./bin/grpc_gateway ./gateway/main.go"
 
   # Build the Docker Image for myblog-server
   myblog-server:
@@ -81,7 +97,11 @@ services:
     volumes_from:
       - data
     environment:
-      - PORT=9090
+      - SERVICES_SERVER_PORT=9090
+      - DATABASES_MONGODB_URL=localhost
+      - DATABASES_MONGODB_DBNAME=nomkhonwaan_com
+    ports:
+      - '9090:9090'
     depends_on:
       - deployment
     entrypoint: |
@@ -103,13 +123,14 @@ services:
     volumes_from:
       - data
     environment:
-      - PORT=8080
-      - GRPC_SERVER_URI=myblog-server:9090
+      - SERVICES_GATEWAY_PORT=8080
+      - SERVICES_GATEWAY_SERVER_URI=myblog-server:9090
     ports:
       - '8080:8080'
     links:
       - myblog-server
     depends_on:
+      - deployment
       - myblog-server
     entrypoint: |
       /bin/sh -c " \

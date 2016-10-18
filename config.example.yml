@@ -1,0 +1,20 @@
+services:
+  gateway:
+    # Always set to 0.0.0.0
+    host: '0.0.0.0'
+    port: 8080
+    # A gRPC server connection string
+    server_uri: localhost:9090
+  grpc:
+    # Always set to 0.0.0.0
+    host: '0.0.0.0'
+    port: 9090
+databases:
+  mongodb:
+    # List of MongoDB servers
+    url: localhost
+    # An example for connect with replica set
+    # url: localhost,localhost:27018,localhost:27019
+    
+    # Database name, this will used when create repository
+    dbname: test

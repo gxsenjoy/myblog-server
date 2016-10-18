@@ -34,12 +34,9 @@ LABEL com.nomkhonwaan.branch=$BUILD_BRANCH
 LABEL com.nomkhonwaan.environment=$BUILD_ENVIRONMENT
 LABEL com.nomkhonwaan.version=$BUILD_VERSION
 
-ENV PORT=9090
 ENV APPLICATION=$BUILD_APPLICATION
 
 WORKDIR /usr/bin
 ADD ./bin/$BUILD_APPLICATION /usr/bin/
-
-EXPOSE $PORT
 
 CMD ["sh", "-c", "/usr/bin/${APPLICATION}"]

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"net/http"
 	"os"
@@ -10,12 +9,15 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	myblog "github.com/nomkhonwaan/myblog-server"
 	"github.com/nomkhonwaan/myblog-server/protos/blog-service/posts"
+	"github.com/spf13/viper"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
 var (
-	blogservicePostsEndpoint   = flag.String("blogservice_posts_endpoint", os.Getenv("GRPC_SERVER_URI"), "endpoint of blogservice_posts.PostsService")
+	// blogservicePostsEndpoint   = flag.String("blogservice_posts_endpoint", viper.GetString("services.gateway.server_uri"), "endpoint of blogservice_posts.PostsService")
 	blogservicePostsSwaggerDir = flag.String("blogservice_posts_swagger_dir", "protos/blog-service/posts", "path to the directory which contains swagger definitions")
 )
 
@@ -36,7 +38,7 @@ func newGateway(ctx context.Context, opts ...runtime.ServeMuxOption) (http.Handl
 	mux := runtime.NewServeMux(opts...)
 	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
 
-	err := protos_blogservice_posts.RegisterPostsServiceHandlerFromEndpoint(ctx, mux, *blogservicePostsEndpoint, dialOpts)
+	err := protos_blogservice_posts.RegisterPostsServiceHandlerFromEndpoint(ctx, mux, viper.GetString("services.gateway.server_uri"), dialOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +90,14 @@ func main() {
 	flag.Parse()
 	defer glog.Flush()
 
-	if err := Run(":" + os.Getenv("PORT")); err != nil {
+	if err := myblog.ParseConfig(myblog.Config{
+		"services.gateway.port":       os.Getenv("SERVICES_GATEWAY_PORT"),
+		"services.gateway.server_uri": os.Getenv("SERVICES_GATEWAY_SERVER_URI"),
+	}); err != nil {
+		glog.Fatal(err)
+	}
+
+	if err := Run(":" + viper.GetString("services.gateway.port")); err != nil {
 		glog.Fatal(err)
 	}
 }

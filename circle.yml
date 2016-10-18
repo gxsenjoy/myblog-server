@@ -60,8 +60,8 @@ test:
           cd /go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && \
           go vet ./... &&
           go test ./blog-service/... && \
-          go test ./grpc-gateway/... && \
-          go test ./grpc-server/..."
+          go test ./gateway/... && \
+          go test ./server/..."
 deployment:
   staging:
     branch: develop
@@ -75,8 +75,8 @@ deployment:
           -e CIRCLE_PROJECT_REPONAME="${CIRCLE_PROJECT_REPONAME}" \
           golang:1.7-alpine /bin/sh -c " \
             cd /go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && \
-            go build -o ./bin/grpc_server ./grpc-server/main.go &&
-            go build -o ./bin/grpc_gateway ./grpc-gateway/main.go"
+            go build -o ./bin/grpc_server ./server/main.go &&
+            go build -o ./bin/grpc_gateway ./gateway/main.go"
       # Build the Docker Image for gRPC server
       - |
         docker build \

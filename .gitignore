@@ -25,9 +25,12 @@ _testmain.go
 
 bin/*
 !bin/.gitkeep
+
 vendor
 
 ssl/*
 !ssl/*.json
 
 .cache
+
+config.yml

@@ -15,7 +15,7 @@ spec:
         ports:
         - containerPort: 3000
         env:
-        - name: PORT
+        - name: SERVICES_GATEWAY_PORT
           value: "3000"
-        - name: GRPC_SERVER_URI
+        - name: SERVICES_GATEWAY_SERVER_URI
           value: "myblog-server:9090"
