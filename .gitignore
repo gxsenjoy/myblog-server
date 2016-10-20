@@ -31,6 +31,6 @@ vendor
 ssl/*
 !ssl/*.json
 
-.cache
+.tmp
 
 config.yml
