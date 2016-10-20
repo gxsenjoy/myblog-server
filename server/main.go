@@ -40,7 +40,7 @@ func main() {
 	defer glog.Flush()
 
 	if err := myblog.ParseConfig(myblog.Config{
-		"services.grpc.port":       os.Getenv("SERVICES_GRPC_PORT"),
+		"services.server.port":     os.Getenv("SERVICES_SERVER_PORT"),
 		"databases.mongodb.url":    os.Getenv("DATABASES_MONGODB_URL"),
 		"databases.mongodb.dbname": os.Getenv("DATABASES_MONGODB_DBNAME"),
 	}); err != nil {
@@ -51,7 +51,7 @@ func main() {
 		glog.Fatal(err)
 	}
 
-	if err := Run(viper.GetString("services.grpc.port")); err != nil {
+	if err := Run(viper.GetString("services.server.port")); err != nil {
 		glog.Fatal(err)
 	}
 }
