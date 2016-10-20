@@ -11,7 +11,7 @@ func ParseConfig(defaultConfig Config) error {
 	viper.AddConfigPath(".")
 
 	for key, defaultValue := range defaultConfig {
-		viper.SetDefault(key, defaultValue)
+		viper.Set(key, defaultValue)
 	}
 
 	if err := viper.ReadInConfig(); err != nil {
