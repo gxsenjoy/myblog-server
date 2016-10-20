@@ -7,11 +7,18 @@ services:
   data:
     image: alpine:latest
     volumes:
-      - $PWD/.cache/gopath:/go:rw
-      - $PWD/config.example.yml:/usr/bin/config.yml:ro
+      - $PWD/.tmp/gopath:/go:rw
+      - $PWD/.tmp/mongodb:/mongodb:rw
+      - $PWD/config.yml:/usr/bin/config.yml:ro
       - $PWD:/go/src/github.com/nomkhonwaan/myblog-server:rw
     command: /bin/true
   
+  mongo:
+    image: mongo:latest
+    volumes_from:
+      - data
+    command: mongod --dbpath /mongodb
+
   # To install Golang packages using Godep
   dependencies:
     image: golang:1.7-alpine
@@ -98,18 +105,23 @@ services:
       - data
     environment:
       - SERVICES_SERVER_PORT=9090
-      - DATABASES_MONGODB_URL=localhost
+      - DATABASES_MONGODB_URL=mongo
       - DATABASES_MONGODB_DBNAME=nomkhonwaan_com
+    expose:
+      - '9090'
     ports:
       - '9090:9090'
+    links:
+      - mongo
     depends_on:
-      - deployment
+      - mongo
     entrypoint: |
       /bin/sh -c " \
-        while [ ! -f /go/src/github.com/nomkhonwaan/myblog-server/bin/grpc_server ]; do
+        while ! nc mongo 27017; do
+          echo \"Waiting for mongo service already, sleep 1s\"
           sleep 1
         done;
-
+        
         /usr/bin/grpc_server"
   
   # Build the Docker Image for myblog-gateway
@@ -125,16 +137,18 @@ services:
     environment:
       - SERVICES_GATEWAY_PORT=8080
       - SERVICES_GATEWAY_SERVER_URI=myblog-server:9090
+    expose:
+      - '8080'
     ports:
       - '8080:8080'
     links:
       - myblog-server
     depends_on:
-      - deployment
       - myblog-server
     entrypoint: |
       /bin/sh -c " \
-        while [ ! -f /go/src/github.com/nomkhonwaan/myblog-server/bin/grpc_gateway ] || [ ! \"nc myblog-server 9090\" ]; do
+        while ! nc myblog-server 9090; do
+          echo  \"Waiting for myblog-server service already, sleep 1s\"
           sleep 1
         done;
         
