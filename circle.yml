@@ -21,12 +21,13 @@ dependencies:
         golang:1.7-alpine /bin/sh -c " \
           apk -U --no-cache add git && \
           cd /go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && \
+          go get github.com/tools/godep && \
+          go get github.com/golang/protobuf/protoc-gen-go && \
           go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway && \
           go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger && \
-          go get github.com/golang/protobuf/protoc-gen-go && \
           go get github.com/onsi/ginkgo/ginkgo && \
           go get github.com/onsi/gomega && \
-          go get google.golang.org/grpc"
+          godep restore"
 
     # Compile the Protocol Buffers
     # - gRPC Stub
@@ -58,10 +59,10 @@ test:
         -e CIRCLE_PROJECT_REPONAME="${CIRCLE_PROJECT_REPONAME}" \
         golang:1.7-alpine /bin/sh -c " \
           cd /go/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} && \
-          go vet ./... &&
-          go test ./blog-service/... && \
-          go test ./gateway/... && \
-          go test ./server/..."
+          godep go vet ./... &&
+          godep go test ./blog-service/... && \
+          godep go test ./gateway/... && \
+          godep go test ./server/..."
 deployment:
   staging:
     branch: develop
