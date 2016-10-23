@@ -90,7 +90,7 @@ func main() {
 	flag.Parse()
 	defer glog.Flush()
 
-	if err := myblog.ParseConfig(myblog.Config{
+	if err := myblog.InitConfig(myblog.Config{
 		"services.gateway.port":       os.Getenv("SERVICES_GATEWAY_PORT"),
 		"services.gateway.server_uri": os.Getenv("SERVICES_GATEWAY_SERVER_URI"),
 	}); err != nil {

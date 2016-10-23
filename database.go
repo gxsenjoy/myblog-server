@@ -3,95 +3,97 @@ package myblog
 import (
 	"sync"
 
+	"github.com/golang/glog"
+	"github.com/nomkhonwaan/myblog-server/models"
+
 	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var (
-	db   Database
+	conn Connection
 	once sync.Once
 )
 
-type Database interface {
+func NewConnection() Connection {
+	once.Do(func() {
+		conn = &mgConnection{}
+	})
+	return conn
+}
+
+type Connection interface {
 	Connect(url string) error
 	Disconnect() error
 
-	SetDB(dbName string) (DB, error)
+	Database(dbName string) Database
 }
 
-type DB interface {
-	SetTable(tblName string) (Table, error)
+type Database interface {
+	Collection(colName string) Collection
 }
 
-type Table interface {
-	Find(query interface{}) Result
-	FindOne(id interface{}) Result
+type Collection interface {
+	All(q Query) func(m []models.Model) error
+	First(q Query) func(m models.Model) error
 }
 
-type Result interface {
-	One(model Model) error
+type Query map[string]interface{}
+
+type mgConnection struct {
+	*mgo.Session
 }
 
-func NewDatabase() Database {
-	once.Do(func() {
-		db = newMongodb()
-	})
-	return db
+func (mg *mgConnection) Connect(url string) (err error) {
+	mg.Session, err = mgo.Dial(url)
+	return err
 }
 
-// -- MongoDB --
-
-type mongodb struct {
-	session *mgo.Session
-}
-
-func (m *mongodb) Connect(url string) (err error) {
-	m.session, err = mgo.Dial(url)
-	return
-}
-
-func (m *mongodb) Disconnect() error {
-	m.session.Close()
+func (mg *mgConnection) Disconnect() error {
+	mg.Session.Close()
 	return nil
 }
 
-func (m *mongodb) SetDB(dbName string) (DB, error) {
-	return &mgDB{m.session.DB(dbName)}, nil
+func (mg *mgConnection) Database(dbName string) Database {
+	return &mgDB{mg.DB(dbName)}
 }
-
-func newMongodb() *mongodb {
-	return &mongodb{}
-}
-
-// -- mgDB --
 
 type mgDB struct {
 	*mgo.Database
 }
 
-func (m *mgDB) SetTable(tblName string) (Table, error) {
-	return &mgTable{m.C(tblName)}, nil
+func (mg *mgDB) Collection(colName string) Collection {
+	return &mgCollection{mg.C(colName)}
 }
 
-// -- mgTable --
-
-type mgTable struct {
+type mgCollection struct {
 	*mgo.Collection
 }
 
-func (m *mgTable) Find(query interface{}) Result {
-	return &mgResult{m.Collection.Find(query)}
+func (mg *mgCollection) First(q Query) func(m models.Model) error {
+	return func(m models.Model) error {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					glog.Warning("An error has occurred: %v", r)
+				}
+			}()
+			if _, ok := q["id"]; ok {
+				q["_id"] = bson.ObjectIdHex(q["id"].(string))
+				delete(q, "id")
+			}
+		}()
+
+		return mg.Find(q).One(m)
+	}
 }
 
-func (m *mgTable) FindOne(id interface{}) Result {
-	return &mgResult{m.Collection.FindId(id)}
-}
+func (mg *mgCollection) All(q Query) func(m []models.Model) error {
+	return func(m []models.Model) error {
+		if _, ok := q["id"]; ok {
+			delete(q, "id")
+		}
 
-// -- mgResult --
-
-type mgResult struct {
-	*mgo.Query
-}
-
-func (m *mgResult) One(model Model) error {
-	return m.Query.One(model)
+		return mg.Find(q).All(&m)
+	}
 }

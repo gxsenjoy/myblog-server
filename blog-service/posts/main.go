@@ -1,39 +1,32 @@
 package blogservice_posts
 
 import (
-	"gopkg.in/mgo.v2/bson"
+	"errors"
 
-	"github.com/golang/glog"
-	myblog "github.com/nomkhonwaan/myblog-server"
+	"github.com/nomkhonwaan/myblog-server/models"
 	pb "github.com/nomkhonwaan/myblog-server/protos/blog-service/posts"
+	"github.com/nomkhonwaan/myblog-server/repositories"
 	"golang.org/x/net/context"
 )
 
 type PostsServiceServer struct {
-	myblog.Repository
+	repositories.Repository
 }
 
 func (s *PostsServiceServer) FindByID(ctx context.Context, in *pb.PostIDRequest) (*pb.Post, error) {
-	var postModel myblog.PostModel
-	var err error
+	result, err := s.Repository.FindByID(in.Id)
 
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				glog.Info("An error has occurred: %v", r)
-				err = s.Find(bson.M{"slug": in.Id}).One(&postModel)
-			}
-		}()
-		err = s.FindOne(bson.ObjectIdHex(in.Id)).One(&postModel)
-	}()
+	if entity, ok := result.(models.Post); ok {
+		return &pb.Post{
+			Id:        entity.GetID(),
+			PostTitle: entity.GetTitle(),
+			PostSlug:  entity.GetSlug(),
+			// PublishedAt: entity.GetPublishedAt(),
+			Html: entity.GetHTML(),
+			// CreatedAt:   entity.GetCreatedAt(),
+			// UpdatedAt:   entity.GetUpdatedAt(),
+		}, err
+	}
 
-	return &pb.Post{
-		Id:        postModel.ID.Hex(),
-		PostTitle: postModel.PostTitle,
-		PostSlug:  postModel.PostSlug,
-		// PublishedAt: postModel.PublishedAt,
-		Html: postModel.HTML,
-		// CreatedAt: postModel.CreatedAt,
-		// UpdatedAt: postModel.UpdatedAt,
-	}, err
+	return &pb.Post{}, errors.New("An error has occurred.")
 }

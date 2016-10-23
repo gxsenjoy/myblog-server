@@ -92,3 +92,8 @@ $ go build -o ../bin/grpc_server .
 $ cd $GOPATH/src/github.com/nomkhonwaan/myblog-server/grpc-gateway
 $ go build -o ../bin/grpc-gateway
 ```
+
+## TODO
+- [ ] Move all models to theier folder and naming package to `models`
+- [ ] Rewrite database.go to make it cleary and easy to implement
+- [ ] Rewrite repository, need to clarify on repository pattern scope
